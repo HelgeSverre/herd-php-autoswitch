@@ -27,13 +27,22 @@ foreach ($v in '82', '83', '84') {
 New-FakeCommand $bin 'composer' '@php %*' 'exec php "$@"'
 
 New-Item -ItemType Directory -Force (Join-Path $valet 'Nginx') | Out-Null
-Set-Content (Join-Path $valet 'config.json') '{ "tld": "test" }'
+# ~/Herd is parked; ~/Code/worktree-folder is linked as "linked-app"; ~/elsewhere/my-project is not a site.
+@{ tld = 'test'; paths = @((Join-Path $valet 'Sites'), (Join-Path $mock 'Herd')) } | ConvertTo-Json | Set-Content (Join-Path $valet 'config.json')
 Set-Content (Join-Path $valet 'Nginx/my-project.test.conf') "# ISOLATED_PHP_VERSION=8.3`nserver {}"
 Set-Content (Join-Path $valet 'Nginx/legacy.test.conf') "# ISOLATED_PHP_VERSION=8.2`nserver {}"
 Set-Content (Join-Path $valet 'Nginx/other-project.test.conf') 'server {}'
-foreach ($d in 'Herd/my-project/app/Models', 'Herd/legacy', 'Herd/other-project', 'elsewhere') {
+Set-Content (Join-Path $valet 'Nginx/docs.test.conf') "# ISOLATED_PHP_VERSION=8.2`nserver {}"
+Set-Content (Join-Path $valet 'Nginx/old-app.test.conf') "# ISOLATED_PHP_VERSION=8.1`nserver {}"
+Set-Content (Join-Path $valet 'Nginx/linked-app.test.conf') "# ISOLATED_PHP_VERSION=8.2`nserver {}"
+foreach ($d in 'Herd/my-project/app/Models', 'Herd/my-project/docs', 'Herd/legacy', 'Herd/other-project', 'Herd/old-app',
+               'Code/worktree-folder/src', 'elsewhere/my-project') {
     New-Item -ItemType Directory -Force (Join-Path $mock $d) | Out-Null
 }
+New-Item -ItemType Directory -Force (Join-Path $valet 'Sites') | Out-Null
+# A junction needs no admin rights on Windows; elsewhere use a symlink.
+$linkType = if ($onWindows) { 'Junction' } else { 'SymbolicLink' }
+New-Item -ItemType $linkType -Path (Join-Path $valet 'Sites/linked-app') -Target (Join-Path $mock 'Code/worktree-folder') | Out-Null
 
 Set-Variable -Name HOME -Value $mock -Force -Scope Global
 $env:PATH = "$bin$sep$env:PATH"
@@ -69,8 +78,16 @@ $hookName = if ($promptMode) { 'prompt' } else { 'LocationChangedAction' }
 "PowerShell $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition)), hook: $hookName"
 Set-Location (Join-Path $mock 'Herd/my-project');            Test-Step 'my-project' '8.3.0'
 Set-Location (Join-Path $mock 'Herd/my-project/app/Models'); Test-Step 'subdirectory' '8.3.0'
+Set-Location (Join-Path $mock 'Herd/my-project/docs');       Test-Step 'docs-subfolder' '8.3.0'
 Set-Location (Join-Path $mock 'Herd/legacy');                Test-Step 'legacy' '8.2.0'
 Set-Location (Join-Path $mock 'Herd/other-project');         Test-Step 'other-project' '8.4.0'
+Set-Location (Join-Path $mock 'Code/worktree-folder');       Test-Step 'linked-site' '8.2.0'
+Set-Location (Join-Path $mock 'Code/worktree-folder/src');   Test-Step 'linked-subfolder' '8.2.0'
+Set-Location (Join-Path $mock 'elsewhere/my-project');       Test-Step 'same-name-not-a-site' '8.4.0'
+Set-Location (Join-Path $mock 'Herd/old-app');               Test-Step 'missing-version' '8.4.0'
+$warned = & (Get-Module HerdPhpAutoswitch) { $script:Warned }
+if ($warned -eq 'old-app') { '  ok   warns about the missing PHP 8.1' }
+else { "  FAIL no warning recorded for the missing PHP 8.1 (got '$warned')"; $failures++ }
 Set-Location (Join-Path $mock 'elsewhere');                  Test-Step 'elsewhere' '8.4.0'
 Set-Location $mock;                                          Test-Step 'home' '8.4.0'
 Push-Location (Join-Path $mock 'Herd/my-project');           Test-Step 'push-location' '8.3.0'

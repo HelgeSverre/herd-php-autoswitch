@@ -122,14 +122,18 @@ When you run `herd isolate 8.3`, Herd writes this line at the top of the site's 
 
 Herd reads the same line for `herd php`. Each time you change folders, the hook:
 
-1. looks for the site's nginx config, checking the current folder and then each parent folder,
-2. reads the PHP version from that line,
+1. finds the Herd site you're in, the same way Herd does: a folder linked with `herd link` (named after the link), or a
+   folder directly inside a parked path (`herd park`). It checks the current folder first, then each parent folder.
+2. reads the PHP version from that site's config line,
 3. puts that version's folder first on your `PATH`:
    - on macOS, `~/.cache/herd-php-autoswitch/83`, which holds a `php` link to Herd's `php83`
    - on Windows, Herd's own `bin\php83` folder
 
 `composer`, `php artisan` and tools in `vendor/bin` all use the first `php` on your `PATH`, so they follow along. Each
-switch reads one small file and takes under 2 ms.
+switch takes 1 to 2 ms.
+
+If a site is isolated to a PHP version that isn't installed in Herd, you get a one-line warning when you enter it, and
+the default PHP stays in place.
 
 ## Compatibility
 
@@ -141,9 +145,9 @@ switch reads one small file and takes under 2 ms.
 
 ## Limitations
 
-- The site is found by folder name. A site linked under a different name (`herd link other-name`) isn't detected.
-- A subfolder with the same name as another secured or isolated site (say `docs`, when `docs.test` exists) is treated
-  as that site.
+- It changes the shell you're typing in. Scripts, child shells and IDE tasks keep the PHP version that was active when
+  they started, even if they `cd` into another project.
+- Aliases win over `PATH`. If you have `alias php='herd php'` or `alias composer='herd composer'`, remove them.
 - Only `herd isolate` is read. PHP versions in `.valetrc` or `.valetphprc` files are ignored.
 - It only changes your own terminal. To make Composer pick packages for your production PHP version on every machine,
   also run `composer config platform.php 8.3.30` in the project.

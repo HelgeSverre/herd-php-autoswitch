@@ -9,8 +9,13 @@ failures=0
 # label, directory relative to $HOME, expected PHP version
 steps='my-project Herd/my-project 8.3.0
 subdirectory Herd/my-project/app/Models 8.3.0
+docs-subfolder Herd/my-project/docs 8.3.0
 legacy Herd/legacy 8.2.0
 other-project Herd/other-project 8.4.0
+linked-site Code/worktree-folder 8.2.0
+linked-subfolder Code/worktree-folder/src 8.2.0
+same-name-not-a-site elsewhere/my-project 8.4.0
+missing-version Herd/old-app 8.4.0
 elsewhere elsewhere 8.4.0
 home . 8.4.0
 re-enter Herd/my-project 8.3.0'
@@ -57,7 +62,7 @@ for shell in $shells; do
         echo 'r() { print -r -- "$1|$(php)|$(composer)|${#${(@M)path:#*herd-php-autoswitch*}}" }'
         cd_lines r
       } > "$home/test.zsh"
-      HOME=$home PATH="$herd_bin:$PATH" zsh -f "$home/test.zsh" | check zsh || failures=$((failures + 1))
+      HOME=$home PATH="$herd_bin:$PATH" zsh -f "$home/test.zsh" 2> "$home/stderr" | check zsh || failures=$((failures + 1))
       ;;
     bash)
       # PROMPT_COMMAND only runs in interactive shells, so feed the script to `bash -i`.
@@ -71,7 +76,7 @@ for shell in $shells; do
         echo 'cd "$HOME/Herd/legacy"; false'
         echo 'echo "status|$__seen_status||"'
       } > "$home/test.bash"
-      HOME=$home PATH="$herd_bin:$PATH" bash --norc --noprofile -i < "$home/test.bash" 2>/dev/null | check bash || failures=$((failures + 1))
+      HOME=$home PATH="$herd_bin:$PATH" bash --norc --noprofile -i < "$home/test.bash" 2> "$home/stderr" | check bash || failures=$((failures + 1))
       ;;
     fish)
       {
@@ -82,9 +87,16 @@ for shell in $shells; do
         echo 'r uninstalled'
         echo 'functions -q __herd_autoswitch_apply; and echo "uninstalled|handler still defined||"'
       } > "$home/test.fish"
-      HOME=$home PATH="$herd_bin:$PATH" fish --no-config "$home/test.fish" | check fish || failures=$((failures + 1))
+      HOME=$home PATH="$herd_bin:$PATH" fish --no-config "$home/test.fish" 2> "$home/stderr" | check fish || failures=$((failures + 1))
       ;;
   esac
+  warnings=$(grep -c 'PHP 8.1 is not installed' "$home/stderr" 2>/dev/null)
+  if [ "$warnings" = 1 ]; then
+    echo "  ok   $shell warns once about the missing PHP 8.1"
+  else
+    echo "  FAIL $shell printed the missing-version warning $warnings times (expected 1)"
+    failures=$((failures + 1))
+  fi
   rm -rf "$home"
 done
 

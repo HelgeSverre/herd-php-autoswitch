@@ -32,11 +32,20 @@ for v in ['82' '83' '84'] {
 fake-command $bin 'composer' '@php %*' 'exec php "$@"'
 
 mkdir $nginx
-'{ "tld": "test" }' | save -f ($nginx | path dirname | path join 'config.json')
+let valet = $nginx | path dirname
+# ~/Herd is parked; ~/Code/worktree-folder is linked as "linked-app"; ~/elsewhere/my-project is not a site.
+{ tld: 'test', paths: [($valet | path join 'Sites') ($mock | path join 'Herd')] } | to json | save -f ($valet | path join 'config.json')
 "# ISOLATED_PHP_VERSION=8.3\nserver {}\n" | save -f ($nginx | path join $"my-project.test($suffix)")
 "# ISOLATED_PHP_VERSION=8.2\nserver {}\n" | save -f ($nginx | path join $"legacy.test($suffix)")
 "server {}\n" | save -f ($nginx | path join $"other-project.test($suffix)")
-for d in ['Herd/my-project/app/Models' 'Herd/legacy' 'Herd/other-project' 'elsewhere'] { mkdir ($mock | path join $d) }
+"# ISOLATED_PHP_VERSION=8.2\nserver {}\n" | save -f ($nginx | path join $"docs.test($suffix)")
+"# ISOLATED_PHP_VERSION=8.1\nserver {}\n" | save -f ($nginx | path join $"old-app.test($suffix)")
+"# ISOLATED_PHP_VERSION=8.2\nserver {}\n" | save -f ($nginx | path join $"linked-app.test($suffix)")
+for d in ['Herd/my-project/app/Models' 'Herd/my-project/docs' 'Herd/legacy' 'Herd/other-project' 'Herd/old-app' 'Code/worktree-folder/src' 'elsewhere/my-project'] { mkdir ($mock | path join $d) }
+mkdir ($valet | path join 'Sites')
+let link = $valet | path join 'Sites' 'linked-app'
+let target = $mock | path join 'Code' 'worktree-folder'
+if $windows { ^cmd /c mklink /J $link $target | ignore } else { ^ln -s $target $link }
 
 $env.HOME = $mock
 $env.USERPROFILE = $mock
@@ -49,8 +58,13 @@ for step in [
     [label dir expected];
     [my-project 'Herd/my-project' '8.3.0']
     [subdirectory 'Herd/my-project/app/Models' '8.3.0']
+    [docs-subfolder 'Herd/my-project/docs' '8.3.0']
     [legacy 'Herd/legacy' '8.2.0']
     [other-project 'Herd/other-project' '8.4.0']
+    [linked-site 'Code/worktree-folder' '8.2.0']
+    [linked-subfolder 'Code/worktree-folder/src' '8.2.0']
+    [same-name-not-a-site 'elsewhere/my-project' '8.4.0']
+    [missing-version 'Herd/old-app' '8.4.0']
     [elsewhere 'elsewhere' '8.4.0']
     [home '.' '8.4.0']
     [re-enter 'Herd/my-project' '8.3.0']
@@ -66,6 +80,16 @@ for step in [
         print $"  FAIL ($step.label): php '($php)' composer '($composer)' added ($added) \(expected ($step.expected)\)"
         $failures += 1
     }
+}
+
+# The missing-version step records that it warned about old-app (printed once, to stderr).
+cd ($mock | path join 'Herd' 'old-app')
+__herd_autoswitch_apply
+if ($env.__HERD_AUTOSWITCH_WARNED? | default '') == 'old-app' {
+    print '  ok   warns about the missing PHP 8.1'
+} else {
+    print '  FAIL no warning recorded for the missing PHP 8.1'
+    $failures += 1
 }
 
 cd $nu.temp-dir
