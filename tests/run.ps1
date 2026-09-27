@@ -38,15 +38,22 @@ foreach ($d in 'Herd/my-project/app/Models', 'Herd/legacy', 'Herd/other-project'
 Set-Variable -Name HOME -Value $mock -Force -Scope Global
 $env:PATH = "$bin$sep$env:PATH"
 
-# A handler registered before the module must keep running.
+# PowerShell 6+ hooks LocationChangedAction; Windows PowerShell 5.1 has none, so the module
+# wraps `prompt` instead. Either way, a hook that existed before the module must keep running.
+$promptMode = -not $ExecutionContext.SessionState.InvokeCommand.PSObject.Properties['LocationChangedAction']
 $global:otherHandlerCalls = 0
-$ExecutionContext.SessionState.InvokeCommand.LocationChangedAction =
-    [EventHandler[System.Management.Automation.LocationChangedEventArgs]] { $global:otherHandlerCalls++ }
+if ($promptMode) {
+    function global:prompt { $global:otherHandlerCalls++; 'PS> ' }
+} else {
+    $ExecutionContext.SessionState.InvokeCommand.LocationChangedAction =
+        [EventHandler[System.Management.Automation.LocationChangedEventArgs]] { $global:otherHandlerCalls++ }
+}
 
 Import-Module (Join-Path $root 'HerdPhpAutoswitch') -Force
 
 $failures = 0
 function Test-Step($label, $expected) {
+    if ($promptMode) { prompt | Out-Null }  # the REPL draws a prompt after each command
     $php = (& php | Out-String).Trim()
     $composer = (& composer | Out-String).Trim()
     $added = @(($env:PATH -split $sep) | Where-Object { $_ -like "*herd*bin*php8*" }).Count
@@ -58,7 +65,8 @@ function Test-Step($label, $expected) {
     }
 }
 
-"PowerShell $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition))"
+$hookName = if ($promptMode) { 'prompt' } else { 'LocationChangedAction' }
+"PowerShell $($PSVersionTable.PSVersion) ($($PSVersionTable.PSEdition)), hook: $hookName"
 Set-Location (Join-Path $mock 'Herd/my-project');            Test-Step 'my-project' '8.3.0'
 Set-Location (Join-Path $mock 'Herd/my-project/app/Models'); Test-Step 'subdirectory' '8.3.0'
 Set-Location (Join-Path $mock 'Herd/legacy');                Test-Step 'legacy' '8.2.0'
@@ -68,8 +76,8 @@ Set-Location $mock;                                          Test-Step 'home' '8
 Push-Location (Join-Path $mock 'Herd/my-project');           Test-Step 'push-location' '8.3.0'
 Pop-Location;                                                Test-Step 'pop-location' '8.4.0'
 
-if ($global:otherHandlerCalls -gt 0) { "  ok   existing LocationChangedAction still runs ($global:otherHandlerCalls calls)" }
-else { "  FAIL existing LocationChangedAction was replaced"; $failures++ }
+if ($global:otherHandlerCalls -gt 0) { "  ok   existing hook still runs ($global:otherHandlerCalls calls)" }
+else { "  FAIL existing hook was replaced"; $failures++ }
 
 Set-Location (Join-Path $mock 'Herd/my-project')
 Remove-Module HerdPhpAutoswitch
@@ -77,8 +85,9 @@ Test-Step 'after Remove-Module (PATH entry removed)' '8.4.0'
 Set-Location (Join-Path $mock 'Herd/legacy');                Test-Step 'after Remove-Module (no longer switching)' '8.4.0'
 $before = $global:otherHandlerCalls
 Set-Location $mock
-if ($global:otherHandlerCalls -gt $before) { "  ok   existing LocationChangedAction survives Remove-Module" }
-else { "  FAIL Remove-Module removed the existing LocationChangedAction"; $failures++ }
+if ($promptMode) { prompt | Out-Null }
+if ($global:otherHandlerCalls -gt $before) { "  ok   existing hook restored after Remove-Module" }
+else { "  FAIL Remove-Module did not restore the existing hook"; $failures++ }
 
 Set-Location ([IO.Path]::GetTempPath())
 Remove-Item -LiteralPath $mock -Recurse -Force

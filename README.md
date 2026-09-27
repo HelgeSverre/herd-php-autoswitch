@@ -86,6 +86,10 @@ Add-Content $PROFILE.CurrentUserAllHosts 'Import-Module "$HOME\herd-php-autoswit
 Windows PowerShell 5.1 blocks profile scripts by default. Allow them once with
 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`. PowerShell 7 and 5.1 each have their own profile.
 
+PowerShell 7 switches right after every `cd`, `Set-Location`, `Push-Location` and `Pop-Location`. Windows PowerShell 5.1
+has no hook for that, so there the module switches before each prompt (keeping your existing prompt, e.g. oh-my-posh);
+as with bash, a `cd` and a `php` on the same line use the previous directory's version.
+
 After running `herd isolate` inside a site, run `Update-HerdPhpAutoswitch` (or `cd .`) to pick up the change.
 
 ### Nushell (macOS and Windows)

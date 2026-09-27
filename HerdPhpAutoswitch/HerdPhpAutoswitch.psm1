@@ -35,13 +35,32 @@ function Update-HerdPhpAutoswitch {
     $env:PATH = (@($script:Added) + $paths | Where-Object { $_ }) -join $sep
 }
 
-$script:Handler = [EventHandler[System.Management.Automation.LocationChangedEventArgs]] { Update-HerdPhpAutoswitch }
-$ExecutionContext.SessionState.InvokeCommand.LocationChangedAction = [Delegate]::Combine(
-    $ExecutionContext.SessionState.InvokeCommand.LocationChangedAction, $script:Handler)
+$invokeCommand = $ExecutionContext.SessionState.InvokeCommand
+if ($invokeCommand.PSObject.Properties['LocationChangedAction']) {
+    # PowerShell 6+: runs after every cd, Set-Location, Push-Location and Pop-Location.
+    $script:Handler = [EventHandler[System.Management.Automation.LocationChangedEventArgs]] { Update-HerdPhpAutoswitch }
+    $invokeCommand.LocationChangedAction = [Delegate]::Combine($invokeCommand.LocationChangedAction, $script:Handler)
+} else {
+    # Windows PowerShell 5.1 has no LocationChangedAction; run before each prompt instead,
+    # keeping any existing prompt (oh-my-posh, starship).
+    $script:OriginalPrompt = $function:global:prompt
+    $function:global:prompt = {
+        if ($PWD.Path -ne $script:LastPwd) {
+            $script:LastPwd = $PWD.Path
+            Update-HerdPhpAutoswitch
+        }
+        & $script:OriginalPrompt
+    }
+}
 
 $ExecutionContext.SessionState.Module.OnRemove = {
-    $ExecutionContext.SessionState.InvokeCommand.LocationChangedAction = [Delegate]::Remove(
-        $ExecutionContext.SessionState.InvokeCommand.LocationChangedAction, $script:Handler)
+    if ($script:Handler) {
+        $ExecutionContext.SessionState.InvokeCommand.LocationChangedAction = [Delegate]::Remove(
+            $ExecutionContext.SessionState.InvokeCommand.LocationChangedAction, $script:Handler)
+    }
+    if ($script:OriginalPrompt) {
+        $function:global:prompt = $script:OriginalPrompt
+    }
     if ($script:Added) {
         $sep = [IO.Path]::PathSeparator
         $env:PATH = (($env:PATH -split $sep) -ne $script:Added) -join $sep
