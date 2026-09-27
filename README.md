@@ -10,9 +10,9 @@
 ![Nushell](https://img.shields.io/badge/Nushell-4E9A06?logo=nushell&logoColor=white)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**Plain `php` in your terminal now follows `herd isolate`.** `cd` into a site pinned to PHP 8.3 and `php`, `composer`
-and `artisan` run on 8.3; leave it and you're back on Herd's default. It works in subdirectories and needs no `herd`
-prefix. zsh, bash, fish, PowerShell and Nushell, on macOS and Windows.
+**Your terminal now uses the PHP version you set with `herd isolate`.** When you `cd` into an isolated site, `php`,
+`composer` and `artisan` switch to that version, in subfolders too. When you leave, they switch back to Herd's default.
+Works in zsh, bash, fish, PowerShell and Nushell, on macOS and Windows.
 
 ```bash
 # my-project is isolated to PHP 8.3 (herd isolate 8.3)
