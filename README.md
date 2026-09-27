@@ -1,48 +1,53 @@
 <img src="docs/banner.webp" alt="Illustration of a developer herding purple PHP elephants tagged 8.3, 8.4 and 8.2 past a terminal showing cd my-project and php 8.3, titled HERD-PHP-AUTOSWITCH" width="100%">
 
-# herd-php-autoswitch
+# Herd PHP Autoswitch
 
 [![tests](https://github.com/HelgeSverre/herd-php-autoswitch/actions/workflows/tests.yml/badge.svg)](https://github.com/HelgeSverre/herd-php-autoswitch/actions/workflows/tests.yml)
-![zsh](https://img.shields.io/badge/zsh-supported-F15A24?logo=zsh&logoColor=white)
-![bash](https://img.shields.io/badge/bash-3.2%2B-4EAA25?logo=gnubash&logoColor=white)
-![fish](https://img.shields.io/badge/fish-3.5%2B-34C534)
-![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-5391FE)
-![Nushell](https://img.shields.io/badge/Nushell-supported-4E9A06)
-![macOS | Windows](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey)
-[![Laravel Herd](https://img.shields.io/badge/Laravel%20Herd-isolate-F53003?logo=laravel&logoColor=white)](https://herd.laravel.com)
-[![MIT license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+![zsh](https://img.shields.io/badge/zsh-F15A24?logo=zsh&logoColor=white)
+![bash](https://img.shields.io/badge/bash-4EAA25?logo=gnubash&logoColor=white)
+![fish](https://img.shields.io/badge/fish-34C534?logo=fishshell&logoColor=white)
+![PowerShell](https://img.shields.io/badge/PowerShell-5391FE)
+![Nushell](https://img.shields.io/badge/Nushell-4E9A06?logo=nushell&logoColor=white)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-`herd isolate 8.3` pins a PHP version for a site, but only for the web server. In the terminal, `php` is still Herd's
-global default. This hook switches `php` (and with it `composer`, `php artisan` and `vendor/bin` tools) to the isolated
-version when you `cd` into the site, and back when you leave.
+**Plain `php` in your terminal now follows `herd isolate`.** `cd` into a site pinned to PHP 8.3 and `php`, `composer`
+and `artisan` run on 8.3; leave it and you're back on Herd's default. It works in subdirectories and needs no `herd`
+prefix. zsh, bash, fish, PowerShell and Nushell, on macOS and Windows.
 
 ```bash
-$ cd ~/Herd/my-project        # herd isolate 8.3
-$ php -r 'echo PHP_VERSION;'
-8.3.33
-$ cd ~
-$ php -r 'echo PHP_VERSION;'
-8.4.25
+# my-project is isolated to PHP 8.3 (herd isolate 8.3)
+cd ~/Herd/my-project
+php -v                  # PHP 8.3.33
+
+# composer and artisan run on the same version
+composer --version      # ... PHP version 8.3.33
+
+# outside an isolated site: Herd's global default
+cd ~
+php -v                  # PHP 8.4.25
 ```
 
-Herd's own `herd php` and `herd composer` do this too, but only from the site's root directory and only with the
-`herd` prefix. This hook also works in subdirectories, with plain `php` and `composer`.
+Herd's own `herd php` and `herd composer` only respect isolation from the site's root directory, and only with the
+`herd` prefix.
 
 ## Install
 
-Requires [Laravel Herd](https://herd.laravel.com) on macOS or Windows, and a site isolated with
-`herd isolate <version>`. Open a new terminal after installing.
+You need [Laravel Herd](https://herd.laravel.com) on macOS or Windows and a site isolated with `herd isolate <version>`.
+Open a new terminal after installing.
 
 ### zsh (macOS)
 
-| Plugin manager | Install                                                                                                                                                                                   |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| oh-my-zsh      | `git clone https://github.com/HelgeSverre/herd-php-autoswitch ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/herd-php-autoswitch`, then add `herd-php-autoswitch` to `plugins=(...)` in `~/.zshrc` |
-| antidote       | add `HelgeSverre/herd-php-autoswitch` to `~/.zsh_plugins.txt`                                                                                                                             |
-| zinit          | `zinit light HelgeSverre/herd-php-autoswitch`                                                                                                                                             |
-| zap            | `plug "HelgeSverre/herd-php-autoswitch"`                                                                                                                                                  |
-| sheldon        | `sheldon add herd-php-autoswitch --github HelgeSverre/herd-php-autoswitch`                                                                                                                |
-| none           | see below                                                                                                                                                                                 |
+- [antidote](https://antidote.sh): add `HelgeSverre/herd-php-autoswitch` to `~/.zsh_plugins.txt`
+- [zinit](https://github.com/zdharma-continuum/zinit): `zinit light HelgeSverre/herd-php-autoswitch`
+- [zap](https://www.zapzsh.com): `plug "HelgeSverre/herd-php-autoswitch"`
+- [sheldon](https://sheldon.cli.rs): `sheldon add herd-php-autoswitch --github HelgeSverre/herd-php-autoswitch`
+
+[oh-my-zsh](https://ohmyz.sh): clone into your custom plugins, then add `herd-php-autoswitch` to `plugins=(...)` in
+`~/.zshrc`:
+
+```bash
+git clone https://github.com/HelgeSverre/herd-php-autoswitch ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/herd-php-autoswitch
+```
 
 Without a plugin manager:
 
@@ -51,21 +56,20 @@ git clone https://github.com/HelgeSverre/herd-php-autoswitch ~/.herd-php-autoswi
 echo 'source ~/.herd-php-autoswitch/herd-php-autoswitch.plugin.zsh' >> ~/.zshrc
 ```
 
-Where it loads in `~/.zshrc` doesn't matter: it applies again at the first prompt, after Herd's own `PATH` line has run.
+Load order in `~/.zshrc` doesn't matter; the plugin applies again at the first prompt.
 
-### bash (macOS)
+### bash (macOS, 3.2+)
 
 ```bash
 git clone https://github.com/HelgeSverre/herd-php-autoswitch ~/.herd-php-autoswitch
 echo 'source ~/.herd-php-autoswitch/herd-php-autoswitch.bash' >> ~/.bashrc
 ```
 
-Terminal.app starts bash as a login shell, which reads `~/.bash_profile`; make sure it sources `~/.bashrc`.
+- Terminal.app starts login shells, which read `~/.bash_profile`; make sure it sources `~/.bashrc`.
+- bash has no directory-change hook, so the switch happens at the next prompt. In `cd other-project && php -v`, `php`
+  is still the previous directory's version.
 
-bash has no hook for directory changes, so the switch happens when the next prompt is drawn. In a one-liner like
-`cd ~/Herd/other-project && php -v`, `php` is still the previous directory's version.
-
-### fish (macOS)
+### fish (macOS, 3.5+)
 
 With [Fisher](https://github.com/jorgebucaran/fisher):
 
@@ -75,7 +79,7 @@ fisher install HelgeSverre/herd-php-autoswitch
 
 Without Fisher, copy `conf.d/herd-php-autoswitch.fish` to `~/.config/fish/conf.d/`.
 
-### PowerShell (Windows)
+### PowerShell (Windows, 5.1+)
 
 ```powershell
 git clone https://github.com/HelgeSverre/herd-php-autoswitch "$HOME\herd-php-autoswitch"
@@ -83,14 +87,11 @@ if (-not (Test-Path $PROFILE.CurrentUserAllHosts)) { New-Item -ItemType File -Pa
 Add-Content $PROFILE.CurrentUserAllHosts 'Import-Module "$HOME\herd-php-autoswitch\HerdPhpAutoswitch"'
 ```
 
-Windows PowerShell 5.1 blocks profile scripts by default. Allow them once with
-`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`. PowerShell 7 and 5.1 each have their own profile.
-
-PowerShell 7 switches right after every `cd`, `Set-Location`, `Push-Location` and `Pop-Location`. Windows PowerShell 5.1
-has no hook for that, so there the module switches before each prompt (keeping your existing prompt, e.g. oh-my-posh);
-as with bash, a `cd` and a `php` on the same line use the previous directory's version.
-
-After running `herd isolate` inside a site, run `Update-HerdPhpAutoswitch` (or `cd .`) to pick up the change.
+- PowerShell 7 switches after every `cd`, `Set-Location`, `Push-Location` and `Pop-Location`.
+- Windows PowerShell 5.1 has no such hook, so it switches at the next prompt, keeping your existing prompt
+  (oh-my-posh, starship). 5.1 blocks profile scripts by default; allow them once with
+  `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+- PowerShell 7 and 5.1 have separate profiles. Add the line to each one you use.
 
 ### Nushell (macOS and Windows)
 
@@ -98,22 +99,22 @@ After running `herd isolate` inside a site, run `Update-HerdPhpAutoswitch` (or `
 git clone https://github.com/HelgeSverre/herd-php-autoswitch ~/.herd-php-autoswitch
 ```
 
-Then add this line to your config (`config nu` opens it):
+Add this line to your config (`config nu` opens it):
 
 ```nu
 source ~/.herd-php-autoswitch/herd-php-autoswitch.nu
 ```
 
-Like bash, Nushell runs the hook when the next prompt is drawn, so a `cd` and a `php` on the same line use the
+[Nushell](https://www.nushell.sh) runs the hook at the next prompt, so a `cd` and a `php` on the same line use the
 previous directory's version.
 
 ## Verify
 
 ```bash
 cd ~/Herd/my-project
-php -v                          # the isolated version
-composer --version 2>&1 | grep 'PHP version'
-which php                       # ~/.cache/herd-php-autoswitch/83/php
+php -v                                          # the isolated version
+composer --version 2>&1 | grep 'PHP version'    # same version
+which php                                       # ~/.cache/herd-php-autoswitch/83/php
 ```
 
 On Windows, `(Get-Command php).Source` shows `...\.config\herd\bin\php83\php.exe`.
@@ -127,40 +128,44 @@ Herd records isolation on the first line of the site's nginx config, for example
 # ISOLATED_PHP_VERSION=8.3
 ```
 
-Herd's own `herd php` and `herd which-php` read the same line. On every directory change, the hook walks up from the
-current directory to the nearest folder with a matching nginx config (`<folder name>.<tld>`, where the TLD comes from
-Herd's `config.json`), reads that line, and puts the version first on `PATH`:
+`herd php` and `herd which-php` read the same line. On every directory change the hook:
 
-- macOS: `~/.cache/herd-php-autoswitch/83`, a folder with one symlink, `php`, pointing to Herd's `php83`.
-- Windows: Herd's own `bin\php83` folder.
+1. walks up to the nearest folder with a matching config (`<folder name>.<tld>`, TLD from Herd's `config.json`),
+2. reads the version from that line,
+3. puts that version first on `PATH`:
+   - macOS: `~/.cache/herd-php-autoswitch/83`, a folder with one symlink, `php`, to Herd's `php83`
+   - Windows: Herd's own `bin\php83` folder
 
-`composer`, `php artisan` and `vendor/bin` scripts run on whichever `php` is first on `PATH`, so they follow. The hook
-reads one file per directory change (under 2 ms) and never calls the `herd` binary.
+`composer`, `php artisan` and `vendor/bin` scripts run on the first `php` on `PATH`, so they follow. Each switch reads
+one file (under 2 ms); the `herd` binary is never called.
 
 ## Compatibility
 
-- Tested with Laravel Herd 1.30 on macOS; zsh 5.9, bash 3.2 and 5.3, fish 4.9, PowerShell 7.6 and Nushell 0.115.
+- Tested with Laravel Herd 1.30 on macOS: zsh 5.9, bash 3.2 and 5.3, fish 4.9, PowerShell 7.6, Nushell 0.115.
 - Works alongside [direnv](https://direnv.net) and [mise](https://mise.jdx.dev) in zsh, bash and fish, in either load
   order (tested with direnv 2.37 and mise 2026.9).
 - CI runs every shell against a fake Herd install on macOS, Ubuntu and Windows, including Windows PowerShell 5.1.
-- Herd for Windows: file locations come from Herd's Windows documentation; the tests use a replica of that layout.
+- Herd for Windows paths come from Herd's Windows documentation; CI uses a replica of that layout.
 
 ## Limitations
 
-- The site is found by folder name. A site linked under a different name (`herd link other-name`) is not detected.
-- A subfolder with the same name as another secured or isolated site (for example `docs` when `docs.test` exists)
-  matches that site.
-- After `herd isolate` or `herd unisolate` inside the site, refresh with `cd .` (zsh, fish, PowerShell, Nushell),
-  `unset _herd_autoswitch_pwd` (bash), or `Update-HerdPhpAutoswitch` (PowerShell).
-- A PHP version set in `.valetrc` or `.valetphprc` is not read, only `herd isolate`.
-- It only changes your shell. To make Composer resolve dependencies for your production PHP version on every machine,
-  also set `composer config platform.php 8.3.30`.
+- Sites are found by folder name, so a site linked under another name (`herd link other-name`) is not detected.
+- A subfolder named like another secured or isolated site (`docs` when `docs.test` exists) matches that site.
+- Only `herd isolate` is read; PHP versions in `.valetrc` or `.valetphprc` are ignored.
+- It changes your shell only. To make Composer resolve for your production PHP everywhere, also run
+  `composer config platform.php 8.3.30`.
+
+After `herd isolate` or `herd unisolate` inside a site, refresh with:
+
+- zsh, fish, Nushell: `cd .`
+- bash: `unset _herd_autoswitch_pwd`
+- PowerShell: `Update-HerdPhpAutoswitch` (or `cd .`)
 
 ## Uninstall
 
-- zsh, bash, Nushell: remove the `source` line (or the plugin entry) and the cloned folder.
+- zsh, bash, Nushell: remove the `source` line or plugin entry, and the cloned folder.
 - fish: `fisher remove HelgeSverre/herd-php-autoswitch`.
-- PowerShell: remove the `Import-Module` line from your profile and delete the cloned folder.
+- PowerShell: remove the `Import-Module` line from your profile, and the cloned folder.
 - macOS: `rm -rf ~/.cache/herd-php-autoswitch`.
 
 ## Development
@@ -168,10 +173,10 @@ reads one file per directory change (under 2 ms) and never calls the `herd` bina
 The tests build a fake Herd install in a temporary folder, so they run without Herd:
 
 ```bash
-sh tests/run.sh              # zsh, bash, fish (whichever are installed)
-pwsh -NoProfile -File tests/run.ps1
-nu -n tests/run.nu
-sh tests/nu-repl.sh          # Nushell REPL, needs expect
+sh tests/run.sh                        # zsh, bash, fish (whichever are installed)
+pwsh -NoProfile -File tests/run.ps1    # PowerShell module
+nu -n tests/run.nu                     # Nushell
+sh tests/nu-repl.sh                    # Nushell REPL, needs expect
 ```
 
 ## License
