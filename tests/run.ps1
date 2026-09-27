@@ -43,6 +43,12 @@ New-Item -ItemType Directory -Force (Join-Path $valet 'Sites') | Out-Null
 # A junction needs no admin rights on Windows; elsewhere use a symlink.
 $linkType = if ($onWindows) { 'Junction' } else { 'SymbolicLink' }
 New-Item -ItemType $linkType -Path (Join-Path $valet 'Sites/linked-app') -Target (Join-Path $mock 'Code/worktree-folder') | Out-Null
+# A git worktree inside my-project, linked and isolated on its own.
+Set-Content (Join-Path $valet 'Nginx/wt-inside.test.conf') "# ISOLATED_PHP_VERSION=8.2`nserver {}"
+foreach ($d in 'Herd/my-project/worktrees/wt-inside', 'Herd/my-project/worktrees/wt-unlinked', 'worktrees/wt-outside') {
+    New-Item -ItemType Directory -Force (Join-Path $mock $d) | Out-Null
+}
+New-Item -ItemType $linkType -Path (Join-Path $valet 'Sites/wt-inside') -Target (Join-Path $mock 'Herd/my-project/worktrees/wt-inside') | Out-Null
 
 Set-Variable -Name HOME -Value $mock -Force -Scope Global
 $env:PATH = "$bin$sep$env:PATH"
@@ -84,6 +90,9 @@ Set-Location (Join-Path $mock 'Herd/other-project');         Test-Step 'other-pr
 Set-Location (Join-Path $mock 'Code/worktree-folder');       Test-Step 'linked-site' '8.2.0'
 Set-Location (Join-Path $mock 'Code/worktree-folder/src');   Test-Step 'linked-subfolder' '8.2.0'
 Set-Location (Join-Path $mock 'elsewhere/my-project');       Test-Step 'same-name-not-a-site' '8.4.0'
+Set-Location (Join-Path $mock 'Herd/my-project/worktrees/wt-inside');   Test-Step 'worktree-inside-linked' '8.2.0'
+Set-Location (Join-Path $mock 'Herd/my-project/worktrees/wt-unlinked'); Test-Step 'worktree-inside-unlinked' '8.3.0'
+Set-Location (Join-Path $mock 'worktrees/wt-outside');                  Test-Step 'worktree-outside-unlinked' '8.4.0'
 Set-Location (Join-Path $mock 'Herd/old-app');               Test-Step 'missing-version' '8.4.0'
 $warned = & (Get-Module HerdPhpAutoswitch) { $script:Warned }
 if ($warned -eq 'old-app') { '  ok   warns about the missing PHP 8.1' }

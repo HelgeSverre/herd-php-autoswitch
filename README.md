@@ -148,6 +148,9 @@ the default PHP stays in place.
 - It changes the shell you're typing in. Scripts, child shells and IDE tasks keep the PHP version that was active when
   they started, even if they `cd` into another project.
 - Aliases win over `PATH`. If you have `alias php='herd php'` or `alias composer='herd composer'`, remove them.
+- Git worktrees: a worktree inside the project folder uses the project's PHP version. A worktree elsewhere, such as
+  `git worktree add ../my-project-feature`, is a separate site to Herd (or no site at all), so it uses the default PHP
+  until you run `herd isolate` in it. Outside your parked folders, run `herd link` there first.
 - Only `herd isolate` is read. PHP versions in `.valetrc` or `.valetphprc` files are ignored.
 - It only changes your own terminal. To make Composer pick packages for your production PHP version on every machine,
   also run `composer config platform.php 8.3.30` in the project.

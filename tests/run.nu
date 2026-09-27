@@ -46,6 +46,12 @@ mkdir ($valet | path join 'Sites')
 let link = $valet | path join 'Sites' 'linked-app'
 let target = $mock | path join 'Code' 'worktree-folder'
 if $windows { ^cmd /c mklink /J $link $target | ignore } else { ^ln -s $target $link }
+# A git worktree inside my-project, linked and isolated on its own.
+"# ISOLATED_PHP_VERSION=8.2\nserver {}\n" | save -f ($nginx | path join $"wt-inside.test($suffix)")
+for d in ['Herd/my-project/worktrees/wt-inside' 'Herd/my-project/worktrees/wt-unlinked' 'worktrees/wt-outside'] { mkdir ($mock | path join $d) }
+let wt_link = $valet | path join 'Sites' 'wt-inside'
+let wt_target = $mock | path join 'Herd' 'my-project' 'worktrees' 'wt-inside'
+if $windows { ^cmd /c mklink /J $wt_link $wt_target | ignore } else { ^ln -s $wt_target $wt_link }
 
 $env.HOME = $mock
 $env.USERPROFILE = $mock
@@ -64,6 +70,9 @@ for step in [
     [linked-site 'Code/worktree-folder' '8.2.0']
     [linked-subfolder 'Code/worktree-folder/src' '8.2.0']
     [same-name-not-a-site 'elsewhere/my-project' '8.4.0']
+    [worktree-inside-linked 'Herd/my-project/worktrees/wt-inside' '8.2.0']
+    [worktree-inside-unlinked 'Herd/my-project/worktrees/wt-unlinked' '8.3.0']
+    [worktree-outside-unlinked 'worktrees/wt-outside' '8.4.0']
     [missing-version 'Herd/old-app' '8.4.0']
     [elsewhere 'elsewhere' '8.4.0']
     [home '.' '8.4.0']

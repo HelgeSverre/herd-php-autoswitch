@@ -15,6 +15,9 @@ other-project Herd/other-project 8.4.0
 linked-site Code/worktree-folder 8.2.0
 linked-subfolder Code/worktree-folder/src 8.2.0
 same-name-not-a-site elsewhere/my-project 8.4.0
+worktree-inside-linked Herd/my-project/worktrees/wt-inside 8.2.0
+worktree-inside-unlinked Herd/my-project/worktrees/wt-unlinked 8.3.0
+worktree-outside-unlinked worktrees/wt-outside 8.4.0
 missing-version Herd/old-app 8.4.0
 elsewhere elsewhere 8.4.0
 home . 8.4.0

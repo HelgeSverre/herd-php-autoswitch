@@ -7,6 +7,8 @@
 #   ~/Herd is a parked path, so each folder directly in it is a site named after the folder.
 #   ~/Code/worktree-folder is linked as "linked-app" (link name differs from the folder name).
 #   ~/elsewhere/my-project is NOT a site; it only shares a name with one.
+#   Worktrees: my-project/worktrees/wt-inside is linked and isolated; wt-unlinked is not a
+#   site (so it gets my-project's PHP); ~/worktrees/wt-outside is not a site at all.
 set -eu
 home=$1
 
@@ -26,6 +28,9 @@ site_configs() { # $1 = valet dir, $2 = file suffix (.conf on Windows)
   printf '# ISOLATED_PHP_VERSION=8.1\nserver {}\n' > "$1/Nginx/old-app.test$2"
   printf '# ISOLATED_PHP_VERSION=8.2\nserver {}\n' > "$1/Nginx/linked-app.test$2"
   ln -s "$home/Code/worktree-folder" "$1/Sites/linked-app"
+  # A git worktree inside my-project, linked and isolated on its own.
+  printf '# ISOLATED_PHP_VERSION=8.2\nserver {}\n' > "$1/Nginx/wt-inside.test$2"
+  ln -s "$home/Herd/my-project/worktrees/wt-inside" "$1/Sites/wt-inside"
   printf '{\n    "tld": "test",\n    "loopback": "127.0.0.1",\n    "paths": [\n        "%s",\n        "%s/"\n    ]\n}\n' \
     "$1/Sites" "$home/Herd" > "$1/config.json"
 }
@@ -56,4 +61,5 @@ site_configs "$win/config/valet" ".conf"
 
 mkdir -p "$home/Herd/my-project/app/Models" "$home/Herd/my-project/docs" "$home/Herd/legacy" \
   "$home/Herd/other-project" "$home/Herd/old-app" "$home/Code/worktree-folder/src" \
-  "$home/elsewhere/my-project"
+  "$home/elsewhere/my-project" "$home/Herd/my-project/worktrees/wt-inside" \
+  "$home/Herd/my-project/worktrees/wt-unlinked" "$home/worktrees/wt-outside"
