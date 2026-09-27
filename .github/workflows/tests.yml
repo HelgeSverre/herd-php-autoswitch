@@ -1,0 +1,67 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unix:
+    name: ${{ matrix.os }} (zsh, bash, fish, pwsh, nushell)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install shells
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then
+            brew install fish nushell
+          else
+            sudo apt-get update
+            sudo apt-get install -y zsh fish
+          fi
+
+      - name: zsh, bash, fish
+        run: sh tests/run.sh
+
+      - name: bash 3.2 (the version macOS ships)
+        if: runner.os == 'macOS'
+        run: PATH="/bin:$PATH" sh tests/run.sh bash
+
+      - name: PowerShell module
+        shell: pwsh
+        run: ./tests/run.ps1
+
+      - name: Nushell
+        if: runner.os == 'macOS'
+        run: |
+          nu -n tests/run.nu
+          # Drives an interactive REPL with fixed delays; retry once on a slow runner.
+          sh tests/nu-repl.sh || sh tests/nu-repl.sh
+
+  windows:
+    name: windows-latest (pwsh, Windows PowerShell 5.1, nushell)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: PowerShell 7
+        shell: pwsh
+        run: ./tests/run.ps1
+
+      - name: Windows PowerShell 5.1
+        shell: powershell
+        run: ./tests/run.ps1
+
+      - name: Install Nushell
+        run: choco install nushell -y --no-progress
+
+      - name: Nushell
+        shell: pwsh
+        run: |
+          $env:PATH = "$env:ProgramFiles\nu\bin;$env:PATH"
+          nu -n tests/run.nu
