@@ -14,7 +14,7 @@
 `composer` and `artisan` switch to that version, in subfolders too. When you leave, they switch back to Herd's default.
 Works in zsh, bash, fish, PowerShell and Nushell, on macOS and Windows.
 
-<img src="docs/demo.gif" alt="Terminal recording: in ~/Herd/my-project, isolated to PHP 8.3, php -v and composer report 8.3.33, also in app/Models; in ~/Herd/other-project, php -v reports Herd's default 8.4.25" width="100%">
+<img src="docs/demo.gif" alt="Terminal recording: in ~/Herd/my-project, herd isolate 8.3 succeeds but php -v still reports 8.4.25; after sourcing herd-php-autoswitch, php and composer report 8.3.33, also in app/Models; cd other-project switches back to 8.4.25" width="100%">
 
 Herd's own `herd php` and `herd composer` only do this from the site's root folder, and only with the `herd` prefix.
 
@@ -172,10 +172,12 @@ nu -n tests/run.nu                     # Nushell
 sh tests/nu-repl.sh                    # Nushell REPL (needs expect)
 ```
 
-To re-record the demo GIF (needs [VHS](https://github.com/charmbracelet/vhs) and Herd with PHP 8.3 and 8.4):
+To re-record the demo GIF (needs [VHS](https://github.com/charmbracelet/vhs) and Herd with PHP 8.3 and 8.4). It creates a
+temporary Herd site; the second command removes it:
 
 ```bash
 vhs docs/demo/demo.tape
+sh docs/demo/cleanup.sh
 ```
 
 ## License
